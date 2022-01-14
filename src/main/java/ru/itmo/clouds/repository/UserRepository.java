@@ -1,10 +1,9 @@
 package ru.itmo.clouds.repository;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.springframework.data.repository.CrudRepository;
+import ru.itmo.clouds.entity.EUser;
+
 import java.util.*;
-import javax.persistence.*;
 
 public interface UserRepository extends CrudRepository<EUser, Long> {
      Optional<EUser> findByLogin( String login);

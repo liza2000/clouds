@@ -13,32 +13,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import ru.itmo.clouds.auth.JwtUtils;
 import ru.itmo.clouds.auth.UserDetailsImpl;
+import ru.itmo.clouds.entity.EUser;
 import ru.itmo.clouds.repository.*;
-import ru.itmo.clouds.service.UserService;
 
 import javax.persistence.EntityNotFoundException;
 
-@Data
+
 @AllArgsConstructor
 class RegisterUserRequest{
         String login;
         String password;
 }
 
-@Data
 @AllArgsConstructor
 class LoginRequest{
      String login;
     String password;
  }
-@Data
+
 @AllArgsConstructor
 class MessageIdResponse {
     String message;
     Long id;
 }
 
-@Data
+
 @AllArgsConstructor
 class JwtResponse{
         String login;
