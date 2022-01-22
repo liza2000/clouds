@@ -16,6 +16,7 @@ public class Dataset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     Date created;
+    @Column(nullable = false,unique = true)
     String name;
     String description;
     @ManyToOne

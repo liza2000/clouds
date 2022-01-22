@@ -57,10 +57,9 @@ public class DatasetController {
 
     @PostMapping
     ResponseEntity<Object> addDataset(@RequestBody DatasetRequest addRequest){
-        logger.error(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
-        EUser user = userRepository.findByLogin(
+         EUser user = userRepository.findByLogin(
                 ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin())
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(() -> new EntityNotFoundException("user not found"));
         Dataset dataset = new Dataset(0L,new Date(), addRequest.name,addRequest.description,user);
         dataset = datasetRepository.save(dataset);
         new File(defaultPath+"/"+dataset.getName()).mkdir();
@@ -70,10 +69,12 @@ public class DatasetController {
 
     @PutMapping
     ResponseEntity<Object> updateDataset(@RequestBody DatasetRequest addRequest){
-        Dataset dataset = datasetRepository.findById(addRequest.id).orElseThrow(EntityNotFoundException::new);
+        Dataset dataset = datasetRepository.findById(addRequest.id).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
+        String oldName = dataset.getName();
         dataset.setName(addRequest.name);
         dataset.setDescription(addRequest.description);
         datasetRepository.save(dataset);
+        new File(defaultPath+"/"+oldName).renameTo(new File(defaultPath+"/"+addRequest.name));
         return ResponseEntity.ok(dataset);
     }
 

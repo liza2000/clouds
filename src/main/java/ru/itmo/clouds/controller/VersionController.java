@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +43,7 @@ class VersionRequest {
 @NoArgsConstructor
 @Data
 class VersionResponse{
+    Long id;
     Date created;
     String message;
     List<PicData> picList;
@@ -87,8 +89,8 @@ public class VersionController {
                                   @RequestParam Long dsId) throws IOException {
 
         EUser user = userRepository.findByLogin(
-                ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin()).orElseThrow(EntityNotFoundException::new);
-        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(EntityNotFoundException::new);
+                ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin()).orElseThrow(() -> new EntityNotFoundException("user not found"));
+        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
         Version version = versionRepository.save(new Version(0L, message,dataset,user,new Date()));
         String date = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(version.getCreated());
         if (addFiles!=null) {
@@ -99,7 +101,7 @@ public class VersionController {
                 String path = defaultPath + "/" + dataset.getName() + "/" + ++lastId + "_" + date+"."+extension;
                 datasetElementRepository.save(new DatasetElement(0L,
                         path,
-                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")-1),
+                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")),
                         lastId,
                         false,
                         version,
@@ -120,7 +122,7 @@ public class VersionController {
 
                 datasetElementRepository.save(new DatasetElement(0L,
                         path,
-                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")-1),
+                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")),
                         picId,
                         false,
                         version,
@@ -130,9 +132,12 @@ public class VersionController {
             }
         if (deletePicIds!=null)
             for (Long id: deletePicIds){
+
                 DatasetElement lastElement = datasetElementRepository.findAllByPicIdAndDatasetOrderByVersionDesc(id, dataset).get(0);
+                String path = defaultPath + "/" + dataset.getName() + "/" + id + "_" + date+"." + lastElement.getPath().substring(lastElement.getPath().lastIndexOf("."));
+
                 datasetElementRepository.save(new DatasetElement(0L,
-                        lastElement.getPath(),
+                        path,
                         lastElement.getName(),
                         lastElement.getPicId(),
                         true,
@@ -145,32 +150,42 @@ public class VersionController {
 
     @GetMapping
     public ResponseEntity<List<VersionResponse>> getVersions(@RequestBody Long dsId){
-        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(EntityNotFoundException::new);
+        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
         List<Version> versions = versionRepository.findAllByDataset(dataset);
         List<VersionResponse> response = new ArrayList<>();
 
         for(Version version: versions) {
-            List<DatasetElement> datasetElements = datasetElementRepository.findDatasetElementsByVersion(version);
+            List<DatasetElement> datasetElements = datasetElementRepository.findDatasetElementsByVersion(version.getId(), dsId);
             List<PicData> picData = new ArrayList<>();
             for (DatasetElement d : datasetElements)
                 picData.add(new PicData(d.getPicId(),new File(d.getPath()), d.getName()));
-            response.add(new VersionResponse(version.getCreated(), version.getMessage(), picData));
+            response.add(new VersionResponse(version.getId(),version.getCreated(), version.getMessage(), picData));
         }
         return ResponseEntity.ok(response);
 
     }
 
-    @GetMapping("{id}")
+    @GetMapping(path = "/{id}")
     public ResponseEntity<List<VersionResponse>> getVersion(@PathVariable Long id){
-        Dataset dataset = datasetRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-        Version version = versionRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-            List<DatasetElement> datasetElements = datasetElementRepository.findDatasetElementsByVersion(version);
+        Version version = versionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("version not found"));
+            List<DatasetElement> datasetElements = datasetElementRepository.findDatasetElementsByVersion(version.getId(), version.getDataset().getId());
              List<VersionResponse> response = new ArrayList<>();
             List<PicData> picData = new ArrayList<>();
             for (DatasetElement d : datasetElements)
                 picData.add(new PicData(d.getPicId(),new File(d.getPath()), d.getName()));
-            response.add(new VersionResponse(version.getCreated(), version.getMessage(), picData));
+            response.add(new VersionResponse(version.getId(),version.getCreated(), version.getMessage(), picData));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(path = "/file/{dsId}/{verId}/{picId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public FileSystemResource getFile(@PathVariable Long dsId, @PathVariable Long verId, @PathVariable Long picId){
+        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
+        Version version = versionRepository.findById(verId).orElseThrow(() -> new EntityNotFoundException("version not found"));
+        DatasetElement datasetElement = datasetElementRepository.findDatasetElementsByDatasetAndVersionAndPicId(dataset, version,picId);
+        if (datasetElement==null || datasetElement.getDeleted())
+            throw new EntityNotFoundException("file not found");
+        return new FileSystemResource(datasetElement.getPath());
+
     }
 
 
