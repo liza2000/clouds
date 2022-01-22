@@ -11,7 +11,7 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class DatasetExperiment {
+public class Experiment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,11 +20,14 @@ public class DatasetExperiment {
     @ManyToOne
     @JoinColumn(name = "version_id")
     Version version;
-    Date start;
-    Date end;
+    Date startEx;
+    Date endEx;
 
     String result;
     String title;
     String description;
-    
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    EUser user;
 }

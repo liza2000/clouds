@@ -2,6 +2,7 @@ package ru.itmo.clouds.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -20,18 +21,24 @@ import javax.persistence.EntityNotFoundException;
 
 
 @AllArgsConstructor
+@NoArgsConstructor
+@Data
 class RegisterUserRequest{
         String login;
         String password;
 }
 
 @AllArgsConstructor
+@Data
+@NoArgsConstructor
 class LoginRequest{
      String login;
     String password;
  }
 
 @AllArgsConstructor
+@Data
+@NoArgsConstructor
 class MessageIdResponse {
     String message;
     Long id;
@@ -39,6 +46,8 @@ class MessageIdResponse {
 
 
 @AllArgsConstructor
+@Data
+@NoArgsConstructor
 class JwtResponse{
         String login;
         String accessToken;
@@ -72,6 +81,7 @@ class UserController {
 
     @PostMapping("/register")
     MessageIdResponse  registerBorrower(@RequestBody RegisterUserRequest payload) {
+        logger.error(payload.password);
         if (userRepository.findByLogin(payload.login).isPresent())
             throw new IllegalStateException("User already registered");
         EUser user = new EUser(0L, payload.login, encoder.encode(payload.password));

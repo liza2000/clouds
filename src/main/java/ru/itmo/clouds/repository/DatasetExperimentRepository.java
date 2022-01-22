@@ -1,8 +1,10 @@
 package ru.itmo.clouds.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.itmo.clouds.entity.DatasetExperiment;
+import org.springframework.stereotype.Repository;
+import ru.itmo.clouds.entity.Experiment;
 
-public interface DatasetExperimentRepository extends JpaRepository<DatasetExperiment, Long> {
+@Repository
+public interface DatasetExperimentRepository extends JpaRepository<Experiment, Long> {
 
 }

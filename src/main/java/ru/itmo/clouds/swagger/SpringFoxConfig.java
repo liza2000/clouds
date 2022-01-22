@@ -6,10 +6,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.ApiKey;
-import springfox.documentation.service.Contact;
-import springfox.documentation.service.SecurityReference;
+import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -45,7 +42,7 @@ class SpringFoxConfig extends WebMvcConfigurationSupport {
 
     private SecurityReference defaultAuth() {
         return SecurityReference.builder()
-            .scopes(null)
+            .scopes(new AuthorizationScope[]{})
             .reference("JWT")
             .build();
     }
@@ -60,8 +57,8 @@ class SpringFoxConfig extends WebMvcConfigurationSupport {
 
     private ApiInfo apiInfo(){
         return new ApiInfo(
-            "Микрозаймы",
-            "Микрозаймы для всех",
+            "Версионирование",
+            "Версионирование датасетов",
             API_VERSION,
             "Terms of service",
            new  Contact("", "", ""),

@@ -15,10 +15,10 @@ class JwtUtils {
     private final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     @Value("${clouds.store.jwtSecret}")
-    private final String jwtSecret = null;
+    private String jwtSecret;
 
     @Value("${clouds.store.jwtExpirationMs}")
-    private final long jwtExpirationMs = 0;
+    private long jwtExpirationMs;
 
      public String generateJwtToken( Authentication authentication) {
          UserDetailsImpl userPrincipal =( UserDetailsImpl) authentication.getPrincipal();

@@ -31,4 +31,8 @@ public class DatasetElement {
     @ManyToOne
     @JoinColumn(name = "version_id")
     Version version;
+
+    @ManyToOne
+    @JoinColumn(name = "ds_id")
+    Dataset dataset;
 }

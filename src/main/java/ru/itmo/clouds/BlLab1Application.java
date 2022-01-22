@@ -6,12 +6,12 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
 @SpringBootApplication
-class BlLab1Application extends SpringBootServletInitializer {
+class CloudsApplication extends SpringBootServletInitializer {
 	public SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
-		return builder.sources(BlLab1Application.class);
+		return builder.sources(CloudsApplication.class);
 	}
 	public static void main(String[] args) {
-		SpringApplication.run(BlLab1Application.class);
+		SpringApplication.run(CloudsApplication.class);
 	}
 
 }

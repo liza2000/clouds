@@ -1,20 +1,23 @@
 package ru.itmo.clouds.controller;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.itmo.clouds.auth.UserDetailsImpl;
 import ru.itmo.clouds.entity.*;
 import ru.itmo.clouds.repository.*;
 
 import javax.persistence.EntityNotFoundException;
-import java.io.File;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,6 +26,8 @@ import java.util.List;
 
 
 @AllArgsConstructor
+@Data
+@NoArgsConstructor
 class VersionRequest {
      String message;
      Long dsId;
@@ -35,6 +40,7 @@ class VersionRequest {
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 class VersionResponse{
     Date created;
     String message;
@@ -46,6 +52,7 @@ class VersionResponse{
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 class PicData {
     Long pic_id;
     File pic;
@@ -57,7 +64,7 @@ class PicData {
 @Controller
 @AllArgsConstructor
 @RestController
-@RequestMapping("/dataset/version")
+@RequestMapping("/api/version")
 public class VersionController {
     private final Logger logger  = LoggerFactory.getLogger(VersionController.class);
 
@@ -68,55 +75,69 @@ public class VersionController {
     private PicCounterRepository picCounterRepository;
 
 
-    @Value("${clouds.store.defaultPath}")
-    private final String defaultPath = "";
+    @Value("${clouds.store.path}")
+    private static String defaultPath = "F:/4course/clouds/client_service/folder";
 
-    @PostMapping
-    ResponseEntity<Object> commit(@RequestBody VersionRequest request){
-        EUser user = userRepository.findByLogin(((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin()).orElseThrow(EntityNotFoundException::new);
-        Dataset dataset = datasetRepository.findById(request.dsId).orElseThrow(EntityNotFoundException::new);
-        Version version = versionRepository.save(new Version(0L,request.message,dataset,user,new Date()));
-        String date = new SimpleDateFormat("yyyy-MM-dd").format(version.getCreated());
-        if (request.addRequest!=null) {
+    @RequestMapping(method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Object> commit(@RequestPart(name = "addFile", required = false) List<MultipartFile> addFiles,
+                                  @RequestParam(name = "updateFile", required = false) List<MultipartFile> updateFiles,
+                                  @RequestParam(name = "updatePicId", required = false) List<Long> updatePicIds,
+                                  @RequestParam(name = "deletePicId", required = false) List<Long> deletePicIds,
+                                  @RequestParam String message,
+                                  @RequestParam Long dsId) throws IOException {
+
+        EUser user = userRepository.findByLogin(
+                ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin()).orElseThrow(EntityNotFoundException::new);
+        Dataset dataset = datasetRepository.findById(dsId).orElseThrow(EntityNotFoundException::new);
+        Version version = versionRepository.save(new Version(0L, message,dataset,user,new Date()));
+        String date = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(version.getCreated());
+        if (addFiles!=null) {
             PicCounter picCounter = picCounterRepository.findPicCounterByDataset(dataset);
             Long lastId = picCounter.getLastPicId();
-            for (PicData picData : request.addRequest) {
+            for (MultipartFile file : addFiles) {
+                String extension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
+                String path = defaultPath + "/" + dataset.getName() + "/" + ++lastId + "_" + date+"."+extension;
                 datasetElementRepository.save(new DatasetElement(0L,
-                        defaultPath + "/" + dataset.getName() + "/" + ++lastId + "_" + date,
-                        picData.name,
+                        path,
+                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")-1),
                         lastId,
                         false,
-                        version));
-                // TODO: 14.01.2022 загрузка файла
+                        version,
+                        dataset));
+                File save = new File(path);
+                file.transferTo(save);
             }
             picCounter.setLastPicId(lastId);
             picCounterRepository.save(picCounter);
         }
-        if (request.updateRequest != null)
-            for (PicData picData : request.updateRequest) {
-                DatasetElement lastElement = datasetElementRepository.findAllByPicIdOrderByVersionDesc(picData.pic_id).get(0);
-                String path = lastElement.getPath();
-                if (picData.pic!=null){
-                    // TODO: 14.01.2022 загрузка файла
-                    path = defaultPath + "/" + dataset.getName() + "/" + picData.pic_id + "_" + date;
-                }
+
+        if (updateFiles!=null && updatePicIds!=null && updateFiles.size()==updatePicIds.size())
+            for (int i = 0; i<updateFiles.size();i++) {
+                Long picId = updatePicIds.get(i);
+                MultipartFile file = updateFiles.get(i);
+                String extension = updateFiles.get(i).getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
+                String path = defaultPath + "/" + dataset.getName() + "/" + picId + "_" + date+"."+extension;
 
                 datasetElementRepository.save(new DatasetElement(0L,
                         path,
-                        picData.name==null || picData.name.trim().isEmpty()?lastElement.getName(): picData.name,
-                        lastElement.getPicId(),
+                        file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")-1),
+                        picId,
                         false,
-                        version));
+                        version,
+                        dataset));
+                File save = new File(path);
+                updateFiles.get(i).transferTo(save);
             }
-        if (request.deleteRequest!=null)
-            for (Long id: request.deleteRequest){
-                DatasetElement lastElement = datasetElementRepository.findAllByPicIdOrderByVersionDesc(id).get(0);
+        if (deletePicIds!=null)
+            for (Long id: deletePicIds){
+                DatasetElement lastElement = datasetElementRepository.findAllByPicIdAndDatasetOrderByVersionDesc(id, dataset).get(0);
                 datasetElementRepository.save(new DatasetElement(0L,
                         lastElement.getPath(),
                         lastElement.getName(),
                         lastElement.getPicId(),
                         true,
-                        version));
+                        version,
+                        dataset));
             }
 
         return ResponseEntity.ok(dataset);

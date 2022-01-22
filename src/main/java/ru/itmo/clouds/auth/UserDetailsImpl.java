@@ -29,11 +29,11 @@ public class UserDetailsImpl implements UserDetails {
         this.password = password;
     }
 
-      public static UserDetailsImpl build(EUser eUser) {
+      public static UserDetailsImpl build(EUser user) {
             return new UserDetailsImpl(
-                eUser.getId(),
-                eUser.getLogin(),
-                eUser.getPassword());
+                user.getId(),
+                user.getLogin(),
+                user.getPassword());
         }
 
 
