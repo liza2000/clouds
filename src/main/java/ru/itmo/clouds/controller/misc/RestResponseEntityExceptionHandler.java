@@ -24,6 +24,7 @@ class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler 
            new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 
+
     @ExceptionHandler(value = IllegalStateException.class)
     protected ResponseEntity<Object>  handleAlreadyRegistered(Exception ex, WebRequest request) {
         return handleExceptionInternal(ex, new MessageResponse(ex.getMessage()),
@@ -35,4 +36,11 @@ class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler 
         return handleExceptionInternal(ex, "Access denied!",
            new HttpHeaders(), HttpStatus.FORBIDDEN, request);
     }
+
+    @ExceptionHandler(value = Exception.class)
+    public ResponseEntity<Object>  handleCommonException(Exception ex, WebRequest request) {
+        return handleExceptionInternal(ex,new  MessageResponse(ex.getMessage()),
+                new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
 }
