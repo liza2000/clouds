@@ -80,7 +80,7 @@ class UserController {
 
 
     @PostMapping("/register")
-    MessageIdResponse  registerBorrower(@RequestBody RegisterUserRequest payload) {
+    MessageIdResponse  register(@RequestBody RegisterUserRequest payload) {
         logger.error(payload.password);
         if (userRepository.findByLogin(payload.login).isPresent())
             throw new IllegalStateException("User already registered");
