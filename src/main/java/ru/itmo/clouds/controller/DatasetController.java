@@ -52,8 +52,7 @@ public class DatasetController {
     private JwtUtils jwtUtils;
     private PasswordEncoder encoder;
 
-    @Value("${clouds.store.path}")
-    private static String defaultPath = "F:/4course/clouds/client_service/folder";
+
 
     @PostMapping
     ResponseEntity<Object> addDataset(@RequestBody DatasetRequest addRequest){
@@ -62,7 +61,6 @@ public class DatasetController {
                 .orElseThrow(() -> new EntityNotFoundException("user not found"));
         Dataset dataset = new Dataset(0L,new Date(), addRequest.name,addRequest.description,user);
         dataset = datasetRepository.save(dataset);
-        new File(defaultPath+"/"+dataset.getName()).mkdir();
         picCounterRepository.save(new PicCounter(0L,dataset,0L));
         return ResponseEntity.ok(dataset);
     }
@@ -74,7 +72,6 @@ public class DatasetController {
         dataset.setName(addRequest.name);
         dataset.setDescription(addRequest.description);
         datasetRepository.save(dataset);
-        new File(defaultPath+"/"+oldName).renameTo(new File(defaultPath+"/"+addRequest.name));
         return ResponseEntity.ok(dataset);
     }
 

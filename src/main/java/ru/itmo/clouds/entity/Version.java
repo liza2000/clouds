@@ -27,8 +27,7 @@ public class Version {
     @JoinColumn(name = "user_id")
     EUser user;
 
-    @Column(columnDefinition = "timestamp")
-    @CreationTimestamp
+    @Column(columnDefinition = "datetime2")
     Date created;
 
 
