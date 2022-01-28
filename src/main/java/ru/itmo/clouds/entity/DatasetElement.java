@@ -25,6 +25,9 @@ public class DatasetElement {
 
     Long picId;
 
+    Integer width;
+    Integer height;
+
     @Column(nullable = false)
     Boolean deleted;
 

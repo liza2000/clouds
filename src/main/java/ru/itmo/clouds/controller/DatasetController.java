@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,7 +55,7 @@ public class DatasetController {
 
 
 
-    @PostMapping
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Object> addDataset(@RequestBody DatasetRequest addRequest){
          EUser user = userRepository.findByLogin(
                 ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getLogin())
@@ -65,7 +66,7 @@ public class DatasetController {
         return ResponseEntity.ok(dataset);
     }
 
-    @PutMapping
+    @PutMapping( produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Object> updateDataset(@RequestBody DatasetRequest addRequest){
         Dataset dataset = datasetRepository.findById(addRequest.id).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
         String oldName = dataset.getName();
@@ -75,13 +76,13 @@ public class DatasetController {
         return ResponseEntity.ok(dataset);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Object> getDataset(@PathVariable Long id){
         Dataset dataset = datasetRepository.getOne(id);
         return ResponseEntity.ok(dataset);
     }
 
-    @GetMapping
+    @GetMapping( produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Object> getDatasets(){
         List<Dataset> dataset = datasetRepository.findAll();
         return ResponseEntity.ok(dataset);

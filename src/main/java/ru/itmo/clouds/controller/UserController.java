@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -65,7 +66,7 @@ class UserController {
     private JwtUtils jwtUtils;
     private PasswordEncoder encoder;
 
-    @PostMapping("/signin")
+    @PostMapping(path = "/signin", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Object> authenticateUser(@RequestBody LoginRequest loginRequest)  {
         Authentication authentication = authenticationManager.authenticate(
            new UsernamePasswordAuthenticationToken(loginRequest.login, loginRequest.password)
@@ -79,7 +80,7 @@ class UserController {
     }
 
 
-    @PostMapping("/register")
+    @PostMapping(path = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     MessageIdResponse  register(@RequestBody RegisterUserRequest payload) {
         logger.error(payload.password);
         if (userRepository.findByLogin(payload.login).isPresent())

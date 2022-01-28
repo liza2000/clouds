@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -24,7 +23,9 @@ import ru.itmo.clouds.auth.UserDetailsImpl;
 import ru.itmo.clouds.entity.*;
 import ru.itmo.clouds.repository.*;
 
+import javax.imageio.ImageIO;
 import javax.persistence.EntityNotFoundException;
+import java.awt.*;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -105,7 +106,7 @@ public class VersionController {
     private static String defaultPath = "";
 
     @RequestMapping(method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Object> commit(@RequestPart(name = "addFile", required = false) List<MultipartFile> addFiles,
+    ResponseEntity<VersionResponse> commit(@RequestPart(name = "addFile", required = false) List<MultipartFile> addFiles,
                                   @RequestParam(name = "updateFile", required = false) List<MultipartFile> updateFiles,
                                   @RequestParam(name = "updatePicId", required = false) List<Long> updatePicIds,
                                   @RequestParam(name = "deletePicId", required = false) List<Long> deletePicIds,
@@ -123,10 +124,14 @@ public class VersionController {
             for (MultipartFile file : addFiles) {
                 String extension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
                 String path = defaultPath + "/" + dataset.getName() + "_" + ++lastId + "_" + date+"."+extension;
+
+                Image image = ImageIO.read(file.getInputStream());
                 datasetElementRepository.save(new DatasetElement(0L,
                         path,
                         file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")),
                         lastId,
+                        image.getWidth(null),
+                        image.getHeight(null),
                         false,
                         version,
                         dataset));
@@ -143,11 +148,13 @@ public class VersionController {
                 MultipartFile file = updateFiles.get(i);
                 String extension = updateFiles.get(i).getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
                 String path = defaultPath + "/" + dataset.getName() + "_" + picId + "_" + date+"."+extension;
-
+                Image image = ImageIO.read(file.getInputStream());
                 datasetElementRepository.save(new DatasetElement(0L,
                         path,
                         file.getOriginalFilename().substring(0,file.getOriginalFilename().lastIndexOf(".")),
                         picId,
+                        image.getWidth(null),
+                        image.getHeight(null),
                         false,
                         version,
                         dataset));
@@ -164,15 +171,17 @@ public class VersionController {
                         path,
                         lastElement.getName(),
                         lastElement.getPicId(),
+                        lastElement.getWidth(),
+                        lastElement.getHeight(),
                         true,
                         version,
                         dataset));
             }
 
-        return ResponseEntity.ok(dataset);
+        return getVersion(version.getId());
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<VersionResponse>> getVersions(@RequestBody Long dsId){
         Dataset dataset = datasetRepository.findById(dsId).orElseThrow(() -> new EntityNotFoundException("dataset not found"));
         List<Version> versions = versionRepository.findAllByDataset(dataset);
@@ -189,16 +198,15 @@ public class VersionController {
 
     }
 
-    @GetMapping(path = "/{id}")
-    public ResponseEntity<List<VersionResponse>> getVersion(@PathVariable Long id){
+    @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<VersionResponse> getVersion(@PathVariable Long id){
         Version version = versionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("version not found"));
             List<DatasetElement> datasetElements = datasetElementRepository.findDatasetElementsByVersion(version.getId(), version.getDataset().getId());
-             List<VersionResponse> response = new ArrayList<>();
-            List<PicData> picData = new ArrayList<>();
+             List<PicData> picData = new ArrayList<>();
             for (DatasetElement d : datasetElements)
                 picData.add(new PicData(d.getPicId(),new File(d.getPath()), d.getName()));
-            response.add(new VersionResponse(version.getId(),version.getCreated(), version.getMessage(), picData));
-        return ResponseEntity.ok(response);
+            VersionResponse resp = new VersionResponse(version.getId(),version.getCreated(), version.getMessage(), picData);
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping(path = "/file/{dsId}/{verId}/{picId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)

@@ -14,7 +14,6 @@ import java.util.Date;
 public class Experiment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @ManyToOne
@@ -22,7 +21,7 @@ public class Experiment {
     Version version;
     Date startEx;
     Date endEx;
-
+    String status;
     String result;
     String title;
     String description;
